@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <title>Starlight AR Fixed</title>
+  <title>Starlight AR 彈幕版</title>
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   <style>
@@ -11,7 +11,7 @@
       padding: 0;
       height: 100%;
       overflow: hidden;
-      background: #000;
+      background: transparent;
     }
     #start-btn {
       position: absolute;
@@ -32,10 +32,10 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 50%;
+      height: 100%;
       pointer-events: none;
       overflow: hidden;
-      z-index: 15;
+      z-index: 20;
       display: none;
     }
     .barrage {
@@ -46,32 +46,71 @@
       text-shadow: 0 0 5px black;
       animation: moveLeft 8s linear forwards;
     }
-    @keyframes moveLeft { from { left: 100%; } to { left: -100%; } }
+    @keyframes moveLeft {
+      from { left: 100%; }
+      to { left: -100%; }
+    }
+    #input-panel {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      padding: 10px 15px;
+      border-radius: 12px;
+      z-index: 10000;
+      display: none;
+    }
+    #msg-input {
+      width: 200px;
+      padding: 5px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+    }
+    #send-btn {
+      background: #ff4081;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
 
 <button id="start-btn">開始體驗 🚀</button>
+
+<!-- 彈幕容器 -->
 <div id="barrage-container"></div>
 
+<!-- 留言輸入框 -->
+<div id="input-panel">
+  <input id="msg-input" type="text" placeholder="輸入留言..." />
+  <button id="send-btn">送出</button>
+</div>
+
+<!-- AR 場景 -->
 <a-scene
   id="ar-scene"
-  mindar-image="imageTargetSrc: travel-target.mind; autoStart: false; uiLoading: yes;"
+  mindar-image="imageTargetSrc: travel-target.mind; autoStart: false;"
   color-space="sRGB"
-  renderer="colorManagement: true, physicallyCorrectLights: true, alpha: true"
+  renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true; logarithmicDepthBuffer: true;"
   embedded
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
   style="display: none;">
-  
+
   <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
   <a-assets>
-    <video id="CompVideo" src="Comp.mp4" preload="auto" crossorigin="anonymous"
+    <video id="CompVideo" src="./Comp.mp4" preload="auto" crossorigin="anonymous"
       webkit-playsinline playsinline muted></video>
   </a-assets>
 
-  <!-- 彈幕 marker -->
+  <!-- 留言 marker -->
   <a-entity mindar-image-target="targetIndex:0" id="checkpoint-0">
     <a-text value="留言牆 Marker" color="white" position="0 0 0.1"></a-text>
   </a-entity>
@@ -80,6 +119,7 @@
   <a-entity mindar-image-target="targetIndex:3" id="checkpoint-3">
     <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
   </a-entity>
+
 </a-scene>
 
 <script>
@@ -87,26 +127,60 @@ const startBtn = document.getElementById('start-btn');
 const scene = document.getElementById('ar-scene');
 const video = document.getElementById('CompVideo');
 const videoMarker = document.getElementById('checkpoint-3');
+const barrageContainer = document.getElementById('barrage-container');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const inputPanel = document.getElementById('input-panel');
+const commentMarker = document.getElementById('checkpoint-0');
 
 startBtn.addEventListener('click', async () => {
   startBtn.style.display = 'none';
   scene.style.display = 'block';
-  // 啟動 AR
+  await new Promise(r => setTimeout(r, 300));
   const arSystem = scene.systems["mindar-image-system"];
   await arSystem.start();
   console.log("✅ AR started!");
 });
 
+// 🔹 播影片 Marker
 videoMarker.addEventListener('targetFound', () => {
   console.log("🎬 Marker Found");
-  video.muted = false;
-  video.play().catch(e=>console.warn("Video play error:", e));
+  video.currentTime = 0;
+  video.play().catch(e => console.warn("Video play error:", e));
 });
-
 videoMarker.addEventListener('targetLost', () => {
   console.log("⏸ Marker Lost");
   video.pause();
 });
+
+// 🔹 留言 Marker
+commentMarker.addEventListener('targetFound', () => {
+  console.log("💬 留言 Marker Found");
+  barrageContainer.style.display = 'block';
+  inputPanel.style.display = 'flex';
+});
+commentMarker.addEventListener('targetLost', () => {
+  console.log("💬 留言 Marker Lost");
+  barrageContainer.style.display = 'none';
+  inputPanel.style.display = 'none';
+});
+
+// 🔹 發送留言（生成彈幕）
+sendBtn.addEventListener('click', () => {
+  const text = msgInput.value.trim();
+  if (!text) return;
+  createBarrage(text);
+  msgInput.value = '';
+});
+
+function createBarrage(text) {
+  const div = document.createElement('div');
+  div.className = 'barrage';
+  div.textContent = text;
+  div.style.top = Math.random() * 60 + '%';
+  barrageContainer.appendChild(div);
+  setTimeout(() => div.remove(), 8000);
+}
 </script>
 
 </body>
