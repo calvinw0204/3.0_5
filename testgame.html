@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>光影挑戰 | Starlight AR</title>
+  <title>光影挑戰 | 精準點擊版</title>
   <style>
     body {
       margin: 0;
@@ -21,11 +21,7 @@
       font-size: 20px;
     }
     #score, #timer { margin: 0 15px; display: inline-block; }
-    canvas {
-      display: block;
-      margin: 0 auto;
-      background: transparent;
-    }
+    canvas { display: block; margin: 0 auto; background: transparent; }
   </style>
 </head>
 <body>
@@ -59,13 +55,16 @@
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      stars.forEach((star, i) => {
+      ctx.font = "20px Noto Sans TC";
+      stars.forEach(star => {
         ctx.fillStyle = star.color;
-        ctx.font = "20px Noto Sans TC";
         ctx.fillText(star.name, star.x, star.y);
         star.y += star.speed;
-        if (star.y > canvas.height) stars.splice(i, 1);
       });
+      // 移除落到畫面外的星星
+      for (let i = stars.length - 1; i >= 0; i--) {
+        if (stars[i].y > canvas.height + 20) stars.splice(i, 1);
+      }
       if (gameRunning) requestAnimationFrame(draw);
     }
 
@@ -73,14 +72,27 @@
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      stars.forEach((star, i) => {
-        if (x > star.x && x < star.x + 100 && y > star.y - 20 && y < star.y + 20) {
+
+      // 從最上層星星先判定
+      for (let i = stars.length - 1; i >= 0; i--) {
+        const star = stars[i];
+        const textWidth = ctx.measureText(star.name).width;
+        const textHeight = 24; // 大約文字高度
+        const padding = 5;
+
+        if (
+          x > star.x - padding &&
+          x < star.x + textWidth + padding &&
+          y > star.y - textHeight - padding &&
+          y < star.y + padding
+        ) {
           if (star.isReal) score += 10;
           else score -= 5;
           document.getElementById("score").textContent = `分數：${score}`;
           stars.splice(i, 1);
+          break; // 一次只判定一個
         }
-      });
+      }
     });
 
     function spawnLoop() {
