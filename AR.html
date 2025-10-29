@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <title></title> 
+  <title>Starlight AR</title> 
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.css" />
@@ -75,11 +75,15 @@
  
   <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
 
-  <!-- 3D 模型資源 -->
+  <!-- 資源 -->
   <a-assets>
+    <!-- 3D 模型 -->
     <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
     <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
     <a-asset-item id="checkpoint2Model" src="checkpoint2.glb"></a-asset-item>
+
+    <!-- 影片資源 -->
+    <video id="CompVideo" src="Comp.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
   </a-assets>
 
   <!-- Marker + 模型 -->
@@ -93,6 +97,38 @@
 
   <a-entity mindar-image-target="targetIndex:2" id="checkpoint-2">
     <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
+  </a-entity>
+
+  <!-- Marker 3–12 顯示影片 -->
+  <a-entity mindar-image-target="targetIndex:3" id="checkpoint-3">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:4" id="checkpoint-4">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:6" id="checkpoint-6">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:7" id="checkpoint-7">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:8" id="checkpoint-8">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:9" id="checkpoint-9">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:10" id="checkpoint-10">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:11" id="checkpoint-11">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
+  </a-entity>
+  <a-entity mindar-image-target="targetIndex:12" id="checkpoint-12">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1"></a-video>
   </a-entity>
 
 </a-scene>
@@ -111,13 +147,21 @@
 
 <script>
 function goHome() {
-  window.location.href = "https://starlightar.webflow.io/"; // 換成你 Webflow 首頁
+  window.location.href = "https://starlightar.webflow.io/";
 }
 
-const markers = [
+// ========== 留言 + 彈幕組 ==========
+const messageMarkers = [
   { id:"checkpoint-0", messages:[], interval:null, rewardKey:"reward_checkpoint0" },
   { id:"checkpoint-1", messages:[], interval:null, rewardKey:"reward_checkpoint1" },
   { id:"checkpoint-2", messages:[], interval:null, rewardKey:"reward_checkpoint2" }
+];
+
+// ========== 影片播放組 ==========
+const videoMarkers = [
+  { id:"checkpoint-3" }, { id:"checkpoint-4" }, { id:"checkpoint-5" },
+  { id:"checkpoint-6" }, { id:"checkpoint-7" }, { id:"checkpoint-8" },
+  { id:"checkpoint-9" }, { id:"checkpoint-10" }, { id:"checkpoint-11" }, { id:"checkpoint-12" }
 ];
 
 const input = document.getElementById("messageInput");
@@ -128,9 +172,10 @@ const container = document.getElementById("barrage-container");
 const form = document.getElementById("messageForm");
 
 let activeMarker = null;
+const videoEl = document.getElementById("CompVideo");
 
 // 載入本地存儲
-markers.forEach(m=>{
+messageMarkers.forEach(m=>{
   m.messages = JSON.parse(localStorage.getItem("barrage_" + m.id)||'[]');
 });
 
@@ -160,11 +205,11 @@ function startBarrage(m){
 
 function stopBarrage(m){
   if(m.interval){ clearInterval(m.interval); m.interval=null; }
-  if(!markers.some(marker=>marker.interval)) container.style.display="none";
+  if(!messageMarkers.some(marker=>marker.interval)) container.style.display="none";
 }
 
-// Marker 找到 / 消失事件
-markers.forEach(m=>{
+// Marker 找到 / 消失事件（彈幕）
+messageMarkers.forEach(m=>{
   const el=document.getElementById(m.id);
   el.addEventListener("targetFound", ()=>{
     activeMarker = m;
@@ -172,8 +217,6 @@ markers.forEach(m=>{
     input.disabled = false;
     sendBtn.disabled = false;
     startBarrage(m);
-
-    // Unlock reward
     localStorage.setItem(m.rewardKey,"true");
   });
 
@@ -184,6 +227,13 @@ markers.forEach(m=>{
     sendBtn.disabled = true;
     stopBarrage(m);
   });
+});
+
+// Marker 找到 / 消失事件（影片）
+videoMarkers.forEach(v=>{
+  const el=document.getElementById(v.id);
+  el.addEventListener("targetFound", ()=>{ videoEl.play(); });
+  el.addEventListener("targetLost", ()=>{ videoEl.pause(); });
 });
 
 // 圖片預覽
