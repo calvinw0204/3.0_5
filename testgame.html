@@ -2,187 +2,109 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <title>AR Demo - Game & Star Walk</title>
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.3.0/dist/mindar-image-aframe.prod.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.3.0/dist/mindar-image-aframe.prod.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>光影挑戰 | Starlight AR</title>
   <style>
-    body, html { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; background:black; }
-    #home-btn { position:fixed; top:15px; left:15px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:50px; height:50px; font-size:22px; cursor:pointer; z-index:9999; }
-
-    /* 彈幕 */
-    #barrage-container { position:absolute; top:0; left:0; width:100%; height:50%; pointer-events:none; z-index:15; overflow:hidden; display:none; }
-    .barrage { position:absolute; white-space:nowrap; font-size:18px; color:white; text-shadow:0 0 6px black; display:flex; align-items:center; gap:6px; animation: moveLeft 8s linear forwards; }
-    @keyframes moveLeft { from { left:100%; } to { left:-100%; } }
-
-    /* 留言區 */
-    #messageForm { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:12px; display:flex; align-items:center; gap:8px; width:90%; max-width:900px; justify-content:space-between; z-index:1000; display:none; }
-    #messageInput { flex:1; padding:6px 8px; border-radius:6px; border:1px solid #ccc; }
-    #sendButton { background-color:#0078ff; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
-    #sendButton:hover { background-color:#005fcc; }
-
-    /* 2D Game */
-    #game-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; display:none; text-align:center; color:white; }
-    #game-area { width:300px; height:300px; background:#222; position:relative; margin:auto; border-radius:12px; overflow:hidden; }
-    .star { width:30px; height:30px; position:absolute; background:yellow; border-radius:50%; cursor:pointer; }
-
-    /* 星光大道 */
-    #starwalk-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; display:none; text-align:center; color:white; }
-    #star-name { font-size:22px; margin-top:12px; }
-    #generate-btn { margin-top:8px; padding:6px 12px; border:none; border-radius:6px; background:#0078ff; color:white; cursor:pointer; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #0d0d1a 40%, #000 100%);
+      color: white;
+      font-family: "Noto Sans TC", sans-serif;
+      text-align: center;
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      z-index: 10;
+      font-size: 20px;
+    }
+    #score, #timer { margin: 0 15px; display: inline-block; }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: transparent;
+    }
   </style>
 </head>
 <body>
+  <div id="ui">
+    <span id="score">分數：0</span>
+    <span id="timer">時間：30</span>
+  </div>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-<button id="home-btn" onclick="goHome()">🏠</button>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-<!-- 彈幕 -->
-<div id="barrage-container"></div>
+    const realMovies = ["無間道", "花樣年華", "甜蜜蜜", "重慶森林", "功夫", "英雄本色"];
+    const fakeMovies = ["夢幻追擊", "光影密碼", "午夜之塔", "銀河風暴", "藍天行動"];
+    const stars = [];
 
-<!-- 留言 -->
-<div id="messageForm">
-  <input type="text" id="messageInput" placeholder="輸入文字..." />
-  <button id="sendButton">發送</button>
-</div>
+    let score = 0;
+    let timeLeft = 30;
+    let gameRunning = true;
 
-<!-- 2D Game -->
-<div id="game-container">
-  <div>2D AR Game 🎯</div>
-  <div id="game-area"></div>
-  <div>收集到的星星: <span id="score">0</span></div>
-</div>
+    function randomMovie() {
+      const isReal = Math.random() > 0.5;
+      const name = isReal
+        ? realMovies[Math.floor(Math.random() * realMovies.length)]
+        : fakeMovies[Math.floor(Math.random() * fakeMovies.length)];
+      const x = Math.random() * (canvas.width - 100) + 20;
+      const color = isReal ? "#FFD700" : "#FF69B4"; // 真金黃，假粉紅
+      stars.push({ name, x, y: 0, speed: Math.random() * 2 + 1.5, isReal, color });
+    }
 
-<!-- 星光大道 -->
-<div id="starwalk-container">
-  <div>星光大道 🌟</div>
-  <input type="text" id="nameInput" placeholder="輸入你個名"/>
-  <div id="star-name"></div>
-  <button id="generate-btn">生成星光大道名字</button>
-</div>
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach((star, i) => {
+        ctx.fillStyle = star.color;
+        ctx.font = "20px Noto Sans TC";
+        ctx.fillText(star.name, star.x, star.y);
+        star.y += star.speed;
+        if (star.y > canvas.height) stars.splice(i, 1);
+      });
+      if (gameRunning) requestAnimationFrame(draw);
+    }
 
-<!-- AR Scene -->
-<a-scene mindar-image="imageTargetSrc: travel-target.mind; autoStart: false; filterMinCF:0.0001; filterBeta:0.001; missTolerance:5; warmupTolerance:5" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true" embedded>
-  <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
-
-  <!-- Assets -->
-  <a-assets>
-    <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
-    <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
-    <a-asset-item id="checkpoint2Model" src="checkpoint2.glb"></a-asset-item>
-  </a-assets>
-
-  <!-- checkpoint 0-2 -->
-  <a-entity mindar-image-target="targetIndex:0" id="checkpoint-0">
-    <a-gltf-model src="#checkpoint0Model" scale="0.05 0.05 0.05"></a-gltf-model>
-  </a-entity>
-  <a-entity mindar-image-target="targetIndex:1" id="checkpoint-1">
-    <a-gltf-model src="#checkpoint1Model" scale="0.05 0.05 0.05"></a-gltf-model>
-  </a-entity>
-  <a-entity mindar-image-target="targetIndex:2" id="checkpoint-2">
-    <a-gltf-model src="#checkpoint2Model" scale="0.05 0.05 0.05"></a-gltf-model>
-  </a-entity>
-
-  <!-- checkpoint 5: 2D Game -->
-  <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5"><a-plane color="#444" height="1" width="1" position="0 0 0.1"></a-plane></a-entity>
-
-  <!-- checkpoint 6: 星光大道 -->
-  <a-entity mindar-image-target="targetIndex:6" id="checkpoint-6"><a-plane color="#444" height="1" width="1" position="0 0 0.1"></a-plane></a-entity>
-</a-scene>
-
-<script>
-function goHome(){ window.location.href="https://starlightar.webflow.io/"; }
-
-// ======= MindAR 手動 start =======
-const scene = document.querySelector("a-scene");
-scene.addEventListener("loaded", ()=>{ scene.components["mindar-image"].start(); });
-
-// ====== 彈幕系統 ======
-const container = document.getElementById("barrage-container");
-const messageForm = document.getElementById("messageForm");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-
-function showBarrage(msg){
-  const el = document.createElement("div");
-  el.className = "barrage";
-  el.style.top = Math.random()*(container.offsetHeight-30)+"px";
-  el.textContent = msg;
-  container.appendChild(el);
-  setTimeout(()=>el.remove(),9000);
-}
-
-sendButton.addEventListener("click", ()=>{
-  const text = messageInput.value.trim();
-  if(!text) return;
-  showBarrage(text);
-  messageInput.value="";
-});
-messageInput.addEventListener("keydown", e=>{ if(e.key==="Enter") sendButton.click(); });
-
-// ====== Marker events ======
-function setupMarker(id, onFound, onLost){
-  const el = document.getElementById(id);
-  el.addEventListener("targetFound", onFound);
-  el.addEventListener("targetLost", onLost);
-}
-
-// checkpoint 0-2: 彈幕
-["checkpoint-0","checkpoint-1","checkpoint-2"].forEach(id=>{
-  setupMarker(id, ()=>{
-    container.style.display="block";
-    messageForm.style.display="flex";
-  }, ()=>{
-    container.style.display="none";
-    messageForm.style.display="none";
-  });
-});
-
-// checkpoint 5: 2D game
-const gameContainer = document.getElementById("game-container");
-const gameArea = document.getElementById("game-area");
-const scoreSpan = document.getElementById("score");
-let score = 0;
-setupMarker("checkpoint-5", ()=>{
-  gameContainer.style.display="block";
-
-  gameArea.innerHTML="";
-  score=0;
-  scoreSpan.textContent=score;
-
-  for(let i=0;i<5;i++){
-    const star = document.createElement("div");
-    star.className="star";
-    star.style.top = Math.random()*270+"px";
-    star.style.left = Math.random()*270+"px";
-    star.addEventListener("click", ()=>{
-      score++; scoreSpan.textContent=score;
-      star.remove();
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      stars.forEach((star, i) => {
+        if (x > star.x && x < star.x + 100 && y > star.y - 20 && y < star.y + 20) {
+          if (star.isReal) score += 10;
+          else score -= 5;
+          document.getElementById("score").textContent = `分數：${score}`;
+          stars.splice(i, 1);
+        }
+      });
     });
-    gameArea.appendChild(star);
-  }
 
-}, ()=>{
-  gameContainer.style.display="none";
-});
+    function spawnLoop() {
+      if (!gameRunning) return;
+      randomMovie();
+      setTimeout(spawnLoop, 800);
+    }
 
-// checkpoint 6: 星光大道
-const starwalkContainer = document.getElementById("starwalk-container");
-const nameInput = document.getElementById("nameInput");
-const starNameDiv = document.getElementById("star-name");
-const generateBtn = document.getElementById("generate-btn");
+    function countdown() {
+      const timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").textContent = `時間：${timeLeft}`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          gameRunning = false;
+          alert(`遊戲結束！你嘅分數係 ${score} 🎉`);
+        }
+      }, 1000);
+    }
 
-setupMarker("checkpoint-6", ()=>{
-  starwalkContainer.style.display="block";
-}, ()=>{
-  starwalkContainer.style.display="none";
-});
-
-generateBtn.addEventListener("click", ()=>{
-  const name = nameInput.value.trim();
-  if(!name) return;
-  starNameDiv.textContent = `⭐ ${name} ⭐`;
-});
-</script>
-
+    // 開始遊戲
+    spawnLoop();
+    draw();
+    countdown();
+  </script>
 </body>
 </html>
