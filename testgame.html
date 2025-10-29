@@ -2,18 +2,13 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <title>2D AR 遊戲 + 星光大道 Demo</title>
+  <title>AR Demo - Game & Star Walk</title>
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.css" />
   <style>
     body, html { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; background:black; }
     #home-btn { position:fixed; top:15px; left:15px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:50px; height:50px; font-size:22px; cursor:pointer; z-index:9999; }
-
-    /* 遊戲區 & 星光大道 */
-    #game-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; display:none; text-align:center; color:white; }
-    #star-name { font-size:22px; margin-top:12px; }
-    #generate-btn { margin-top:8px; padding:6px 12px; border:none; border-radius:6px; background:#0078ff; color:white; cursor:pointer; }
 
     /* 彈幕 */
     #barrage-container { position:absolute; top:0; left:0; width:100%; height:50%; pointer-events:none; z-index:15; overflow:hidden; display:none; }
@@ -25,51 +20,72 @@
     #messageInput { flex:1; padding:6px 8px; border-radius:6px; border:1px solid #ccc; }
     #sendButton { background-color:#0078ff; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
     #sendButton:hover { background-color:#005fcc; }
+
+    /* 2D Game */
+    #game-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; display:none; text-align:center; color:white; }
+    #game-area { width:300px; height:300px; background:#222; position:relative; margin:auto; border-radius:12px; overflow:hidden; }
+    .star { width:30px; height:30px; position:absolute; background:yellow; border-radius:50%; cursor:pointer; }
+
+    /* 星光大道 */
+    #starwalk-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; display:none; text-align:center; color:white; }
+    #star-name { font-size:22px; margin-top:12px; }
+    #generate-btn { margin-top:8px; padding:6px 12px; border:none; border-radius:6px; background:#0078ff; color:white; cursor:pointer; }
   </style>
 </head>
 <body>
 
 <button id="home-btn" onclick="goHome()">🏠</button>
 
-<!-- 遊戲 + 星光大道 -->
-<div id="game-container">
-  <div>歡迎來到 AR 星光大道 🎉</div>
-  <input type="text" id="nameInput" placeholder="輸入你個名"/>
-  <div id="star-name"></div>
-  <button id="generate-btn">生成星光大道名字</button>
-</div>
-
-<!-- 彈幕容器 -->
+<!-- 彈幕 -->
 <div id="barrage-container"></div>
 
-<!-- 留言區 -->
+<!-- 留言 -->
 <div id="messageForm">
   <input type="text" id="messageInput" placeholder="輸入文字..." />
   <button id="sendButton">發送</button>
+</div>
+
+<!-- 2D Game -->
+<div id="game-container">
+  <div>2D AR Game 🎯</div>
+  <div id="game-area"></div>
+  <div>收集到的星星: <span id="score">0</span></div>
+</div>
+
+<!-- 星光大道 -->
+<div id="starwalk-container">
+  <div>星光大道 🌟</div>
+  <input type="text" id="nameInput" placeholder="輸入你個名"/>
+  <div id="star-name"></div>
+  <button id="generate-btn">生成星光大道名字</button>
 </div>
 
 <!-- AR Scene -->
 <a-scene mindar-image="imageTargetSrc: travel-target.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; warmupTolerance: 5" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true" embedded>
   <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
 
-  <!-- Marker -->
-  <a-entity mindar-image-target="targetIndex:0" id="marker-demo">
-    <a-plane color="#222" height="1" width="1" position="0 0 0.1"></a-plane>
-  </a-entity>
+  <!-- checkpoint 0-2 -->
+  <a-entity mindar-image-target="targetIndex:0" id="checkpoint-0"><a-plane color="#222" height="0.5" width="0.5" position="0 0 0.1"></a-plane></a-entity>
+  <a-entity mindar-image-target="targetIndex:1" id="checkpoint-1"><a-plane color="#222" height="0.5" width="0.5" position="0 0 0.1"></a-plane></a-entity>
+  <a-entity mindar-image-target="targetIndex:2" id="checkpoint-2"><a-plane color="#222" height="0.5" width="0.5" position="0 0 0.1"></a-plane></a-entity>
+
+  <!-- checkpoint 5: 2D Game -->
+  <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5"><a-plane color="#444" height="1" width="1" position="0 0 0.1"></a-plane></a-entity>
+
+  <!-- checkpoint 6: 星光大道 -->
+  <a-entity mindar-image-target="targetIndex:6" id="checkpoint-6"><a-plane color="#444" height="1" width="1" position="0 0 0.1"></a-plane></a-entity>
 </a-scene>
 
 <script>
-function goHome() {
-  window.location.href = "https://starlightar.webflow.io/";
-}
+function goHome(){ window.location.href="https://starlightar.webflow.io/"; }
 
-// ======== 彈幕系統 ========
+// ====== 彈幕系統 ======
 const container = document.getElementById("barrage-container");
 const messageForm = document.getElementById("messageForm");
 const messageInput = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
-
 let messages = [];
+
 function showBarrage(msg){
   const el = document.createElement("div");
   el.className = "barrage";
@@ -79,7 +95,6 @@ function showBarrage(msg){
   setTimeout(()=>el.remove(),9000);
 }
 
-// 發送留言
 sendButton.addEventListener("click", ()=>{
   const text = messageInput.value.trim();
   if(!text) return;
@@ -87,37 +102,75 @@ sendButton.addEventListener("click", ()=>{
   showBarrage(text);
   messageInput.value="";
 });
-
-// Enter 發送
 messageInput.addEventListener("keydown", e=>{ if(e.key==="Enter") sendButton.click(); });
 
-// ======== Marker 找到 / 消失事件 ========
-const gameContainer = document.getElementById("game-container");
-const starNameDiv = document.getElementById("star-name");
-const nameInput = document.getElementById("nameInput");
-const generateBtn = document.getElementById("generate-btn");
+// ====== Marker events ======
+function setupMarker(id, onFound, onLost){
+  const el = document.getElementById(id);
+  el.addEventListener("targetFound", onFound);
+  el.addEventListener("targetLost", onLost);
+}
 
-const marker = document.getElementById("marker-demo");
-
-marker.addEventListener("targetFound", ()=>{
-  container.style.display="block";
-  messageForm.style.display="flex";
-  gameContainer.style.display="block";
+// checkpoint 0-2: 彈幕
+["checkpoint-0","checkpoint-1","checkpoint-2"].forEach(id=>{
+  setupMarker(id, ()=>{
+    container.style.display="block";
+    messageForm.style.display="flex";
+  }, ()=>{
+    container.style.display="none";
+    messageForm.style.display="none";
+  });
 });
 
-marker.addEventListener("targetLost", ()=>{
-  container.style.display="none";
-  messageForm.style.display="none";
+// checkpoint 5: 2D game
+const gameContainer = document.getElementById("game-container");
+const gameArea = document.getElementById("game-area");
+const scoreSpan = document.getElementById("score");
+let score = 0;
+setupMarker("checkpoint-5", ()=>{
+  gameContainer.style.display="block";
+  container.style.display="block";
+  messageForm.style.display="flex";
+
+  // 生成隨機星星
+  gameArea.innerHTML="";
+  score=0;
+  scoreSpan.textContent=score;
+  for(let i=0;i<5;i++){
+    const star = document.createElement("div");
+    star.className="star";
+    star.style.top = Math.random()*270+"px";
+    star.style.left = Math.random()*270+"px";
+    star.addEventListener("click", ()=>{
+      score++; scoreSpan.textContent=score;
+      star.remove();
+    });
+    gameArea.appendChild(star);
+  }
+
+}, ()=>{
   gameContainer.style.display="none";
 });
 
-// 生成星光大道名字
+// checkpoint 6: 星光大道
+const starwalkContainer = document.getElementById("starwalk-container");
+const nameInput = document.getElementById("nameInput");
+const starNameDiv = document.getElementById("star-name");
+const generateBtn = document.getElementById("generate-btn");
+
+setupMarker("checkpoint-6", ()=>{
+  starwalkContainer.style.display="block";
+  container.style.display="block";
+  messageForm.style.display="flex";
+}, ()=>{
+  starwalkContainer.style.display="none";
+});
+
 generateBtn.addEventListener("click", ()=>{
   const name = nameInput.value.trim();
   if(!name) return;
   starNameDiv.textContent = `⭐ ${name} ⭐`;
 });
 </script>
-
 </body>
 </html>
