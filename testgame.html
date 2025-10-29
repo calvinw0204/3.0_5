@@ -2,167 +2,122 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <title>Starlight AR Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <title>2D AR 遊戲 + 星光大道 Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.css" />
   <style>
-    body, html { margin:0; padding:0; overflow:hidden; font-family:sans-serif; }
-    #start-btn { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); padding:12px 24px; font-size:20px; cursor:pointer; z-index:999; }
-    #gameCanvas { position:absolute; top:0; left:0; z-index:10; display:none; }
-    #nameForm { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(255,255,255,0.9); padding:20px; border-radius:12px; display:none; z-index:20; }
-    #nameForm input { padding:6px; font-size:16px; width:200px; }
-    #nameForm button { padding:6px 12px; font-size:16px; cursor:pointer; }
-    #resultCanvas { display:none; position:absolute; top:10%; left:50%; transform:translateX(-50%); z-index:15; border:2px solid white; }
-    #downloadBtn { display:none; position:absolute; top:80%; left:50%; transform:translateX(-50%); padding:10px 20px; font-size:18px; cursor:pointer; z-index:15; }
+    body, html { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; background:black; }
+    #home-btn { position:fixed; top:15px; left:15px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:50px; height:50px; font-size:22px; cursor:pointer; z-index:9999; }
+
+    /* 遊戲區 & 星光大道 */
+    #game-container { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:10; display:none; text-align:center; color:white; }
+    #star-name { font-size:22px; margin-top:12px; }
+    #generate-btn { margin-top:8px; padding:6px 12px; border:none; border-radius:6px; background:#0078ff; color:white; cursor:pointer; }
+
+    /* 彈幕 */
+    #barrage-container { position:absolute; top:0; left:0; width:100%; height:50%; pointer-events:none; z-index:15; overflow:hidden; display:none; }
+    .barrage { position:absolute; white-space:nowrap; font-size:18px; color:white; text-shadow:0 0 6px black; display:flex; align-items:center; gap:6px; animation: moveLeft 8s linear forwards; }
+    @keyframes moveLeft { from { left:100%; } to { left:-100%; } }
+
+    /* 留言區 */
+    #messageForm { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:12px; display:flex; align-items:center; gap:8px; width:90%; max-width:900px; justify-content:space-between; z-index:1000; display:none; }
+    #messageInput { flex:1; padding:6px 8px; border-radius:6px; border:1px solid #ccc; }
+    #sendButton { background-color:#0078ff; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
+    #sendButton:hover { background-color:#005fcc; }
   </style>
 </head>
 <body>
 
-<!-- 點擊開始 -->
-<button id="start-btn">點擊開始 AR</button>
+<button id="home-btn" onclick="goHome()">🏠</button>
+
+<!-- 遊戲 + 星光大道 -->
+<div id="game-container">
+  <div>歡迎來到 AR 星光大道 🎉</div>
+  <input type="text" id="nameInput" placeholder="輸入你個名"/>
+  <div id="star-name"></div>
+  <button id="generate-btn">生成星光大道名字</button>
+</div>
+
+<!-- 彈幕容器 -->
+<div id="barrage-container"></div>
+
+<!-- 留言區 -->
+<div id="messageForm">
+  <input type="text" id="messageInput" placeholder="輸入文字..." />
+  <button id="sendButton">發送</button>
+</div>
 
 <!-- AR Scene -->
-<a-scene mindar-image="imageTargetSrc: travel-target.mind; autoStart: false" embedded vr-mode-ui="enabled: false">
+<a-scene mindar-image="imageTargetSrc: travel-target.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; warmupTolerance: 5" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true" embedded>
   <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
 
   <!-- Marker -->
-  <a-entity mindar-image-target="targetIndex:0" id="gameMarker">
-    <a-box position="0 0 0.1" depth="0.1" height="0.2" width="0.2" color="yellow"></a-box>
+  <a-entity mindar-image-target="targetIndex:0" id="marker-demo">
+    <a-plane color="#222" height="1" width="1" position="0 0 0.1"></a-plane>
   </a-entity>
 </a-scene>
 
-<!-- 2D 遊戲 Canvas -->
-<canvas id="gameCanvas" width="400" height="600"></canvas>
-
-<!-- 輸入名字 -->
-<div id="nameForm">
-  <div>輸入你的名字：</div>
-  <input type="text" id="playerName" placeholder="你的名字">
-  <button id="submitName">生成星光大道相</button>
-</div>
-
-<!-- Canvas 結果 -->
-<canvas id="resultCanvas" width="400" height="600"></canvas>
-<button id="downloadBtn">下載圖片</button>
-
 <script>
-const startBtn = document.getElementById('start-btn');
-const sceneEl = document.querySelector('a-scene');
-const gameCanvas = document.getElementById('gameCanvas');
-const ctx = gameCanvas.getContext('2d');
-const nameForm = document.getElementById('nameForm');
-const playerNameInput = document.getElementById('playerName');
-const submitNameBtn = document.getElementById('submitName');
-const resultCanvas = document.getElementById('resultCanvas');
-const resultCtx = resultCanvas.getContext('2d');
-const downloadBtn = document.getElementById('downloadBtn');
-
-let gameRunning = false;
-let stars = [];
-let player = {x:180, y:550, w:40, h:10};
-let score = 0;
-
-// 點擊開始啟動 AR
-startBtn.addEventListener('click', async ()=>{
-  startBtn.style.display='none';
-  const mindar = sceneEl.components['mindar-image'];
-  await mindar.start();
-  console.log("AR 啟動");
-});
-
-// Marker 偵測
-const marker = document.getElementById('gameMarker');
-marker.addEventListener('targetFound', ()=>{
-  console.log('Marker 找到');
-  if(!gameRunning){
-    gameCanvas.style.display='block';
-    startGame();
-  }
-});
-
-// 2D 遊戲邏輯
-function startGame(){
-  gameRunning = true;
-  stars = [];
-  score = 0;
-  for(let i=0;i<5;i++){
-    stars.push({x:Math.random()*360, y:Math.random()*-600, r:10});
-  }
-  requestAnimationFrame(gameLoop);
+function goHome() {
+  window.location.href = "https://starlightar.webflow.io/";
 }
 
-// 遊戲循環
-function gameLoop(){
-  ctx.clearRect(0,0,400,600);
-  // 玩家
-  ctx.fillStyle='blue';
-  ctx.fillRect(player.x, player.y, player.w, player.h);
-  // 星星
-  ctx.fillStyle='yellow';
-  stars.forEach(s=>{
-    s.y +=2;
-    if(s.y > 600) s.y = -10, s.x=Math.random()*360;
-    // 撞擊檢測
-    if(s.x+s.r > player.x && s.x < player.x+player.w && s.y+s.r > player.y && s.y < player.y+player.h){
-      score++;
-      s.y = -10;
-      s.x=Math.random()*360;
-    }
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r,0,Math.PI*2);
-    ctx.fill();
-  });
-  // 分數
-  ctx.fillStyle='white';
-  ctx.font='20px sans-serif';
-  ctx.fillText("Score: "+score,10,30);
+// ======== 彈幕系統 ========
+const container = document.getElementById("barrage-container");
+const messageForm = document.getElementById("messageForm");
+const messageInput = document.getElementById("messageInput");
+const sendButton = document.getElementById("sendButton");
 
-  if(score>=10){ // 遊戲完成
-    gameRunning=false;
-    gameCanvas.style.display='none';
-    nameForm.style.display='block';
-  } else requestAnimationFrame(gameLoop);
+let messages = [];
+function showBarrage(msg){
+  const el = document.createElement("div");
+  el.className = "barrage";
+  el.style.top = Math.random()*(container.offsetHeight-30)+"px";
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(()=>el.remove(),9000);
 }
 
-// 玩家控制
-document.addEventListener('keydown', e=>{
-  if(e.key==='ArrowLeft') player.x -=15;
-  if(e.key==='ArrowRight') player.x +=15;
-  if(player.x<0) player.x=0;
-  if(player.x>360) player.x=360;
+// 發送留言
+sendButton.addEventListener("click", ()=>{
+  const text = messageInput.value.trim();
+  if(!text) return;
+  messages.push(text);
+  showBarrage(text);
+  messageInput.value="";
 });
 
-// 輸入名字生成 Canvas
-submitNameBtn.addEventListener('click', ()=>{
-  const name = playerNameInput.value.trim() || '玩家';
-  nameForm.style.display='none';
-  resultCanvas.style.display='block';
-  downloadBtn.style.display='block';
-  // 星光大道效果
-  resultCtx.fillStyle='black';
-  resultCtx.fillRect(0,0,400,600);
-  resultCtx.fillStyle='yellow';
-  for(let i=0;i<50;i++){
-    const x = Math.random()*400;
-    const y = Math.random()*600;
-    resultCtx.beginPath();
-    resultCtx.arc(x,y,2,0,Math.PI*2);
-    resultCtx.fill();
-  }
-  resultCtx.fillStyle='white';
-  resultCtx.font='30px sans-serif';
-  resultCtx.textAlign='center';
-  resultCtx.fillText(name,200,300);
+// Enter 發送
+messageInput.addEventListener("keydown", e=>{ if(e.key==="Enter") sendButton.click(); });
+
+// ======== Marker 找到 / 消失事件 ========
+const gameContainer = document.getElementById("game-container");
+const starNameDiv = document.getElementById("star-name");
+const nameInput = document.getElementById("nameInput");
+const generateBtn = document.getElementById("generate-btn");
+
+const marker = document.getElementById("marker-demo");
+
+marker.addEventListener("targetFound", ()=>{
+  container.style.display="block";
+  messageForm.style.display="flex";
+  gameContainer.style.display="block";
 });
 
-// 下載圖片
-downloadBtn.addEventListener('click', ()=>{
-  const link = document.createElement('a');
-  link.href = resultCanvas.toDataURL('image/png');
-  link.download = 'Starlight_'+(playerNameInput.value||'player')+'.png';
-  link.click();
+marker.addEventListener("targetLost", ()=>{
+  container.style.display="none";
+  messageForm.style.display="none";
+  gameContainer.style.display="none";
+});
+
+// 生成星光大道名字
+generateBtn.addEventListener("click", ()=>{
+  const name = nameInput.value.trim();
+  if(!name) return;
+  starNameDiv.textContent = `⭐ ${name} ⭐`;
 });
 </script>
+
 </body>
 </html>
