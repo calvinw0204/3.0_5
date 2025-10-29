@@ -1,272 +1,243 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Starlight AR Experience</title>
+  <meta charset="UTF-8">
+  <title>Starlight AR</title>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.css" />
   <style>
-    body, html {
-      margin: 0; padding: 0;
-      overflow: hidden;
-      font-family: sans-serif;
-      background-color: black;
-      height: 100%;
+    body, html { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; background:black; }
+
+    /* Home 按鈕 */
+    #home-btn {
+      position: fixed;
+      top: 15px; left: 15px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px; height: 50px;
+      font-size: 22px;
+      cursor: pointer;
+      z-index: 9999;
     }
+
+    /* 彈幕 */
     #barrage-container {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      overflow: hidden;
-      pointer-events: none;
-      display: none;
-      z-index: 2;
+      position:absolute; top:0; left:0; width:100%; height:50%; pointer-events:none; z-index:15; overflow:hidden; display:none;
     }
-    .barrage {
-      position: absolute;
-      white-space: nowrap;
-      font-size: 20px;
-      color: white;
-      text-shadow: 0 0 5px black;
-      animation: moveLeft 9s linear forwards;
+    .barrage { 
+      position:absolute; 
+      white-space:nowrap; 
+      font-size:18px; 
+      color:white; 
+      text-shadow:0 0 6px black; 
+      display:flex; 
+      align-items:center; 
+      gap:6px; 
+      animation: moveLeft 8s linear forwards; 
     }
-    @keyframes moveLeft {
-      from { transform: translateX(100%); }
-      to { transform: translateX(-100%); }
+    .barrage img { 
+      height:120px; width:auto; border-radius:6px; vertical-align:middle; 
     }
+    @keyframes moveLeft { from { left:100%; } to { left:-100%; } }
+
+    /* 留言區 */
     #messageForm {
-      position: fixed;
-      bottom: 10px; left: 50%;
-      transform: translateX(-50%);
-      display: none;
-      z-index: 3;
-      background: rgba(0,0,0,0.5);
-      padding: 8px;
-      border-radius: 12px;
-      align-items: center;
+      position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+      background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:12px;
+      display:flex; align-items:center; gap:8px; width:90%; max-width:900px; justify-content:space-between;
+      z-index:1000; display:none;
     }
-    #messageInput {
-      width: 180px; padding: 6px;
-      border-radius: 8px; border: none;
-    }
-    #sendButton {
-      margin-left: 8px;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 8px;
-      background: #1e90ff;
-      color: white;
-    }
-    #imagePreview {
-      width: 40px; height: 40px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-left: 6px;
-      display: none;
-    }
-    #homeButton {
-      position: fixed;
-      top: 10px; left: 10px;
-      z-index: 4;
-      background: rgba(255,255,255,0.8);
-      border: none;
-      border-radius: 8px;
-      padding: 6px 10px;
-    }
-    video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      z-index: 1;
-      display: none;
-    }
+    #messageInput { flex:1; padding:6px 8px; border-radius:6px; border:1px solid #ccc; }
+    #imageInput { display:none; }
+    #imageLabel { font-size:22px; cursor:pointer; user-select:none; }
+    #imagePreview { height:90px; width:auto; border-radius:4px; display:none; margin-left:6px; }
+    #sendButton { background-color:#0078ff; color:white; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
+    #sendButton:hover { background-color:#005fcc; }
   </style>
-
-  <!-- ✅ 載入 MindAR + A-Frame -->
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.6/dist/mindar-image-aframe.prod.js"></script>
 </head>
-
 <body>
-  <button id="homeButton" onclick="goHome()">🏠 返回首頁</button>
 
-  <!-- ✅ AR Scene -->
-  <a-scene
-    mindar-image="imageTargetSrc: targets.mind; autoStart: true;"
-    color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true"
-    embedded
-  >
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+<!-- Home 按鈕 -->
+<button id="home-btn" onclick="goHome()">🏠</button>
 
-    <!-- 彈幕區 Marker 0–2 -->
-    <a-entity mindar-image-target="targetIndex: 0" id="checkpoint-0"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 1" id="checkpoint-1"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 2" id="checkpoint-2"></a-entity>
+<!-- AR Scene -->
+<a-scene
+  mindar-image="imageTargetSrc: travel-target.mind; autoStart: true"
+  color-space="sRGB"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: true"
+  embedded
+  renderer="colorManagement: true, physicallyCorrectLights">
+  
+  <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
 
-    <!-- 播片區 Marker 3–12 -->
-    <a-entity mindar-image-target="targetIndex: 3" id="checkpoint-3"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 4" id="checkpoint-4"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 5" id="checkpoint-5"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 6" id="checkpoint-6"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 7" id="checkpoint-7"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 8" id="checkpoint-8"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 9" id="checkpoint-9"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 10" id="checkpoint-10"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 11" id="checkpoint-11"></a-entity>
-    <a-entity mindar-image-target="targetIndex: 12" id="checkpoint-12"></a-entity>
-  </a-scene>
+  <a-assets>
+    <!-- 模型 -->
+    <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
+    <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
+    <a-asset-item id="checkpoint2Model" src="checkpoint2.glb"></a-asset-item>
 
-  <!-- ✅ 彈幕、輸入區 -->
-  <div id="barrage-container"></div>
-  <div id="messageForm">
-    <input type="text" id="messageInput" placeholder="輸入留言..." disabled />
-    <input type="file" id="imageInput" accept="image/*" />
-    <button id="sendButton" disabled>發送</button>
-    <img id="imagePreview" />
-  </div>
+    <!-- 影片 -->
+    <video id="CompVideo" src="Comp.mp4" preload="auto" crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+  </a-assets>
 
-  <!-- ✅ 影片 -->
-  <video id="CompVideo" src="Comp.mp4" muted playsinline preload="auto" crossorigin="anonymous"></video>
+  <!-- 彈幕 marker -->
+  <a-entity mindar-image-target="targetIndex:0" id="checkpoint-0">
+    <a-gltf-model src="#checkpoint0Model" position="0 0 0.1" scale="0.8 0.8 0.8"></a-gltf-model>
+  </a-entity>
 
-  <script>
-  function goHome() {
-    window.location.href = "https://starlightar.webflow.io/";
-  }
+  <a-entity mindar-image-target="targetIndex:1" id="checkpoint-1">
+    <a-gltf-model src="#checkpoint1Model" position="0 0 0.1" scale="0.8 0.8 0.8"></a-gltf-model>
+  </a-entity>
 
-  const messageMarkers = [
-    { id:"checkpoint-0", messages:[], interval:null, rewardKey:"reward_checkpoint0" },
-    { id:"checkpoint-1", messages:[], interval:null, rewardKey:"reward_checkpoint1" },
-    { id:"checkpoint-2", messages:[], interval:null, rewardKey:"reward_checkpoint2" }
-  ];
-  const videoMarkers = [
-    { id:"checkpoint-3" }, { id:"checkpoint-4" }, { id:"checkpoint-5" },
-    { id:"checkpoint-6" }, { id:"checkpoint-7" }, { id:"checkpoint-8" },
-    { id:"checkpoint-9" }, { id:"checkpoint-10" }, { id:"checkpoint-11" }, { id:"checkpoint-12" }
-  ];
+  <a-entity mindar-image-target="targetIndex:2" id="checkpoint-2">
+    <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.8 0.8 0.8"></a-gltf-model>
+  </a-entity>
 
-  const input = document.getElementById("messageInput");
-  const sendBtn = document.getElementById("sendButton");
-  const imageInput = document.getElementById("imageInput");
-  const preview = document.getElementById("imagePreview");
-  const container = document.getElementById("barrage-container");
-  const form = document.getElementById("messageForm");
-  const videoEl = document.getElementById("CompVideo");
-  let activeMarker = null;
+  <!-- 影片 marker -->
+  <a-entity mindar-image-target="targetIndex:3" id="checkpoint-3">
+    <a-video src="#CompVideo" width="1.6" height="0.9" position="0 0 0.1" rotation="0 0 0"></a-video>
+  </a-entity>
+</a-scene>
 
-  // ✅ 確保影片能自動播放
-  videoEl.muted = true;
-  videoEl.setAttribute("playsinline", true);
-  videoEl.setAttribute("autoplay", true);
-  document.body.addEventListener("click", () => {
-    videoEl.play().catch(e => console.log("autoplay blocked:", e));
-  }, { once: true });
+<!-- 彈幕容器 -->
+<div id="barrage-container"></div>
 
-  // 載入本地彈幕資料
-  messageMarkers.forEach(m=>{
-    m.messages = JSON.parse(localStorage.getItem("barrage_" + m.id)||'[]');
+<!-- 留言區 -->
+<div id="messageForm">
+  <input type="text" id="messageInput" placeholder="輸入文字..." />
+  <label for="imageInput" id="imageLabel">📷</label>
+  <input type="file" id="imageInput" accept="image/*" />
+  <img id="imagePreview" />
+  <button id="sendButton">發送</button>
+</div>
+
+<script>
+function goHome() {
+  window.location.href = "https://starlightar.webflow.io/";
+}
+
+// 彈幕功能
+const messageMarkers = [
+  { id:"checkpoint-0", messages:[], interval:null, rewardKey:"reward_checkpoint0" },
+  { id:"checkpoint-1", messages:[], interval:null, rewardKey:"reward_checkpoint1" },
+  { id:"checkpoint-2", messages:[], interval:null, rewardKey:"reward_checkpoint2" }
+];
+
+const input = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendButton");
+const imageInput = document.getElementById("imageInput");
+const preview = document.getElementById("imagePreview");
+const container = document.getElementById("barrage-container");
+const form = document.getElementById("messageForm");
+let activeMarker = null;
+
+// 影片控制
+const videoEl = document.getElementById("CompVideo");
+const videoMarker = document.getElementById("checkpoint-3");
+
+videoMarker.addEventListener("targetFound", () => {
+  console.log("🎬 Marker Found, play video");
+  videoEl.muted = false;
+  videoEl.play().catch(err => console.log("播放失敗:", err));
+});
+
+videoMarker.addEventListener("targetLost", () => {
+  console.log("⏸ Marker Lost, pause video");
+  videoEl.pause();
+});
+
+// 彈幕系統
+messageMarkers.forEach(m=>{
+  m.messages = JSON.parse(localStorage.getItem("barrage_" + m.id)||'[]');
+});
+
+function showBarrage(msg){
+  const el=document.createElement("div");
+  el.className="barrage";
+  el.style.top=Math.random()*(container.offsetHeight-120)+"px";
+  if(msg.img){
+    const img=document.createElement("img");
+    img.src=msg.img;
+    el.appendChild(img);
+    if(msg.text) el.appendChild(document.createTextNode(" "+msg.text));
+  } else el.textContent = msg.text;
+  container.appendChild(el);
+  setTimeout(()=>el.remove(),9000);
+}
+
+function startBarrage(m){
+  if(m.interval) return;
+  container.style.display="block";
+  let idx=0;
+  m.interval=setInterval(()=>{
+    if(m.messages.length>0) showBarrage(m.messages[idx]), idx=(idx+1)%m.messages.length;
+  },3000);
+}
+
+function stopBarrage(m){
+  if(m.interval){ clearInterval(m.interval); m.interval=null; }
+  if(!messageMarkers.some(marker=>marker.interval)) container.style.display="none";
+}
+
+messageMarkers.forEach(m=>{
+  const el=document.getElementById(m.id);
+  el.addEventListener("targetFound", ()=>{
+    activeMarker = m;
+    form.style.display = "flex";
+    input.disabled = false;
+    sendBtn.disabled = false;
+    startBarrage(m);
+    localStorage.setItem(m.rewardKey,"true");
   });
 
-  function showBarrage(msg){
-    const el=document.createElement("div");
-    el.className="barrage";
-    el.style.top=Math.random()*(container.offsetHeight-120)+"px";
-    if(msg.img){
-      const img=document.createElement("img");
-      img.src=msg.img;
-      img.style.height="30px";
-      img.style.borderRadius="6px";
-      el.appendChild(img);
-      if(msg.text) el.appendChild(document.createTextNode(" "+msg.text));
-    } else el.textContent=msg.text;
-    container.appendChild(el);
-    setTimeout(()=>el.remove(),9000);
-  }
-
-  function startBarrage(m){
-    if(m.interval) return;
-    container.style.display="block";
-    let idx=0;
-    m.interval=setInterval(()=>{
-      if(m.messages.length>0) showBarrage(m.messages[idx]), idx=(idx+1)%m.messages.length;
-    },3000);
-  }
-
-  function stopBarrage(m){
-    if(m.interval){ clearInterval(m.interval); m.interval=null; }
-    if(!messageMarkers.some(marker=>marker.interval)) container.style.display="none";
-  }
-
-  // 彈幕 Marker 事件
-  messageMarkers.forEach(m=>{
-    const el=document.getElementById(m.id);
-    el.addEventListener("targetFound", ()=>{
-      activeMarker = m;
-      form.style.display = "flex";
-      input.disabled = false;
-      sendBtn.disabled = false;
-      startBarrage(m);
-      localStorage.setItem(m.rewardKey,"true");
-    });
-    el.addEventListener("targetLost", ()=>{
-      if(activeMarker===m) activeMarker=null;
-      form.style.display="none";
-      input.disabled = true;
-      sendBtn.disabled = true;
-      stopBarrage(m);
-    });
+  el.addEventListener("targetLost", ()=>{
+    if(activeMarker===m) activeMarker=null;
+    form.style.display = "none";
+    input.disabled = true;
+    sendBtn.disabled = true;
+    stopBarrage(m);
   });
+});
 
-  // 影片 Marker 事件
-  videoMarkers.forEach(v=>{
-    const el=document.getElementById(v.id);
-    el.addEventListener("targetFound", ()=>{
-      videoEl.style.display="block";
-      videoEl.currentTime=0;
-      videoEl.play().catch(err=>console.log("Play error:",err));
-    });
-    el.addEventListener("targetLost", ()=>{
-      videoEl.pause();
-      videoEl.style.display="none";
-    });
-  });
+// 發送留言
+sendBtn.addEventListener("click",()=>{
+  if(!activeMarker) return;
+  const text=input.value.trim();
+  const file=imageInput.files[0];
+  if(!text && !file) return;
 
-  // 圖片預覽
-  imageInput.addEventListener("change",()=>{
-    const file=imageInput.files[0];
-    if(!file){ preview.style.display="none"; return; }
+  const saveMsg=(imgData=null)=>{
+    const msg={text,img:imgData};
+    activeMarker.messages.push(msg);
+    if(activeMarker.messages.length>50) activeMarker.messages.shift();
+    localStorage.setItem("barrage_" + activeMarker.id,JSON.stringify(activeMarker.messages));
+    showBarrage(msg);
+    input.value=""; imageInput.value=""; preview.style.display="none";
+  };
+
+  if(file){
     const reader=new FileReader();
-    reader.onload=e=>{ preview.src=e.target.result; preview.style.display="inline"; };
+    reader.onload=e=>saveMsg(e.target.result);
     reader.readAsDataURL(file);
-  });
+  } else saveMsg();
+});
 
-  // 發送留言
-  sendBtn.addEventListener("click",()=>{
-    if(!activeMarker) return;
-    const text=input.value.trim();
-    const file=imageInput.files[0];
-    if(!text && !file) return;
+// 圖片預覽
+imageInput.addEventListener("change",()=>{
+  const file=imageInput.files[0];
+  if(!file){ preview.style.display="none"; return; }
+  const reader=new FileReader();
+  reader.onload=e=>{ preview.src=e.target.result; preview.style.display="inline"; };
+  reader.readAsDataURL(file);
+});
 
-    const saveMsg=(imgData=null)=>{
-      const msg={text,img:imgData};
-      activeMarker.messages.push(msg);
-      if(activeMarker.messages.length>50) activeMarker.messages.shift();
-      localStorage.setItem("barrage_" + activeMarker.id,JSON.stringify(activeMarker.messages));
-      showBarrage(msg);
-      input.value=""; imageInput.value=""; preview.style.display="none";
-    };
+// Enter 發送
+input.addEventListener("keydown", e=>{ if(e.key==="Enter") sendBtn.click(); });
+</script>
 
-    if(file){
-      const reader=new FileReader();
-      reader.onload=e=>saveMsg(e.target.result);
-      reader.readAsDataURL(file);
-    } else saveMsg();
-  });
-
-  // Enter 發送
-  input.addEventListener("keydown", e=>{ if(e.key==="Enter") sendBtn.click(); });
-  </script>
 </body>
 </html>
