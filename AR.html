@@ -237,4 +237,27 @@ sendBtn.addEventListener("click",()=>{
     activeMarker.messages.push(msg);
     if(activeMarker.messages.length>50) activeMarker.messages.shift();
     localStorage.setItem("barrage_" + activeMarker.id,JSON.stringify(activeMarker.messages));
-    showBarrage
+    showBarrage(msg);
+    input.value=""; imageInput.value=""; preview.style.display="none";
+  };
+
+  if(file){
+    const reader=new FileReader();
+    reader.onload=e=>saveMsg(e.target.result);
+    reader.readAsDataURL(file);
+  } else saveMsg();
+});
+
+// Enter 發送
+input.addEventListener("keydown", e=>{ if(e.key==="Enter") sendBtn.click(); });
+
+// 點擊開始按鈕
+startBtn.addEventListener("click", ()=>{
+  startBtn.style.display="none";
+  document.querySelector("a-scene").components['mindar-image'].start();
+  videoEl.play().catch(()=>{});  // 確保影片可播放
+});
+</script>
+
+</body>
+</html>
