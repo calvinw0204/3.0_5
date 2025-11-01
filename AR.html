@@ -46,9 +46,7 @@
          device-orientation-permission-ui="enabled: true"
          embedded>
  
-  <!-- camera + cursor for hitbox -->
-  <a-camera position="0 0 0" look-controls="enabled:false" cursor="rayOrigin: mouse"
-            raycaster="objects: #checkpoint5-hitbox"></a-camera>
+  <a-camera position="0 0 0" look-controls="enabled:false" cursor="rayOrigin: mouse"></a-camera>
 
   <a-assets>
     <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
@@ -69,7 +67,6 @@
     <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
 
-  <!-- checkpoint-5 -->
   <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5">
     <a-gltf-model id="model-5" src="#checkpoint5Model" position="0 0 0.1" scale="2.25 2.25 2.25"></a-gltf-model>
     <a-box id="checkpoint5-hitbox" width="3" height="3" depth="1.5" opacity="0" position="0 0 1"></a-box>
@@ -155,11 +152,18 @@ messageMarkers.forEach(m=>{
   });
 });
 
-// checkpoint-5 hitbox click 永遠只綁一次
-const hitbox5 = document.querySelector("#checkpoint5-hitbox");
-hitbox5.addEventListener("click", ()=>{
-  console.log("✅ checkpoint-5 clicked");
-  history.back();
+// checkpoint-5 click 回上一頁
+const checkpoint5Entity = document.querySelector("#checkpoint-5");
+checkpoint5Entity.addEventListener("targetFound", ()=>{
+  const hitbox5 = document.querySelector("#checkpoint5-hitbox");
+  if(hitbox5){
+    hitbox5.replaceWith(hitbox5.cloneNode(true)); // 移除舊 listener
+    const newHitbox = document.querySelector("#checkpoint5-hitbox");
+    newHitbox.addEventListener("click", ()=>{ 
+      console.log("✅ checkpoint-5 clicked"); 
+      history.back(); 
+    });
+  }
 });
 
 // 圖片預覽
