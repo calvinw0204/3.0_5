@@ -73,14 +73,15 @@
          device-orientation-permission-ui="enabled: true"
          embedded>
  
-  <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+  <!-- camera + cursor for clicking -->
+  <a-camera position="0 0 0" look-controls="enabled:false" cursor="rayOrigin: mouse"></a-camera>
 
   <!-- 資源 -->
   <a-assets>
     <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
     <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
     <a-asset-item id="checkpoint2Model" src="checkpoint2.glb"></a-asset-item>
-    <a-asset-item id="checkpoint9Model" src="checkpoint9.glb"></a-asset-item>
+    <a-asset-item id="checkpoint5Model" src="checkpoint5.glb"></a-asset-item>
   </a-assets>
 
   <!-- Marker + 模型 -->
@@ -96,9 +97,11 @@
     <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
 
-  <!-- checkpoint-9: 點擊回上一頁 -->
-  <a-entity mindar-image-target="targetIndex:9" id="checkpoint-9">
-    <a-gltf-model id="model-9" src="#checkpoint9Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
+  <!-- checkpoint-5: 點擊回上一頁 (無彈幕/留言) -->
+  <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5">
+    <a-gltf-model id="model-5" src="#checkpoint5Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
+    <!-- invisible hitbox 確保可點 -->
+    <a-box id="checkpoint5-hitbox" width="1" height="1" depth="0.6" opacity="0" position="0 0 0.1"></a-box>
   </a-entity>
 
 </a-scene>
@@ -170,7 +173,7 @@ function stopBarrage(m){
   if(!messageMarkers.some(marker=>marker.interval)) container.style.display="none";
 }
 
-// Marker 找到 / 消失事件
+// Marker 找到 / 消失事件 (0-2)
 messageMarkers.forEach(m=>{
   const el=document.getElementById(m.id);
   el.addEventListener("targetFound", ()=>{
@@ -188,9 +191,14 @@ messageMarkers.forEach(m=>{
   });
 });
 
-// checkpoint-9: 點擊回上一頁
-document.querySelector("#model-9").addEventListener("click", ()=>{
-  history.back();
+// checkpoint-5: click 回上一頁（用 hitbox，並等 scene loaded）
+AFRAME.scenes[0].addEventListener("loaded", () => {
+  const hitbox5 = document.querySelector("#checkpoint5-hitbox");
+  if(hitbox5){
+    hitbox5.addEventListener("click", ()=>{
+      history.back();
+    });
+  }
 });
 
 // 圖片預覽
