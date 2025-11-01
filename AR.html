@@ -99,9 +99,10 @@
 
   <!-- checkpoint-5: 點擊回上一頁 (無彈幕/留言) -->
   <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5">
-    <a-gltf-model id="model-5" src="#checkpoint5Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
-    <!-- invisible hitbox 確保可點 -->
-    <a-box id="checkpoint5-hitbox" width="1" height="1" depth="0.6" opacity="0" position="0 0 0.1"></a-box>
+    <!-- 放大3倍 -->
+    <a-gltf-model id="model-5" src="#checkpoint5Model" position="0 0 0.1" scale="2.25 2.25 2.25"></a-gltf-model>
+    <!-- 放大 hitbox -->
+    <a-box id="checkpoint5-hitbox" width="3" height="3" depth="1.5" opacity="0" position="0 0 1"></a-box>
   </a-entity>
 
 </a-scene>
@@ -191,14 +192,19 @@ messageMarkers.forEach(m=>{
   });
 });
 
-// checkpoint-5: click 回上一頁（用 hitbox，並等 scene loaded）
+// checkpoint-5: click 回上一頁（用 hitbox，等 scene loaded）
 AFRAME.scenes[0].addEventListener("loaded", () => {
-  const hitbox5 = document.querySelector("#checkpoint5-hitbox");
-  if(hitbox5){
-    hitbox5.addEventListener("click", ()=>{
-      history.back();
-    });
-  }
+  setTimeout(() => {
+    const hitbox5 = document.querySelector("#checkpoint5-hitbox");
+    if (hitbox5) {
+      hitbox5.addEventListener("click", () => {
+        console.log("✅ checkpoint-5 clicked, going back");
+        history.back();
+      });
+    } else {
+      console.warn("⚠️ checkpoint5-hitbox not found");
+    }
+  }, 1000);
 });
 
 // 圖片預覽
