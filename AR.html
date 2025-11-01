@@ -2,14 +2,13 @@
 <html lang="zh-HK">
 <head>
   <meta charset="UTF-8">
-  <title></title> 
+  <title>Starlight AR</title> 
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.css" />
   <style>
     body, html { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
 
-    /* Home 按鈕 */
     #home-btn {
       position: fixed;
       top: 15px; left: 15px;
@@ -25,7 +24,8 @@
 
     /* 彈幕 */
     #barrage-container {
-      position:absolute; top:0; left:0; width:100%; height:50%; pointer-events:none; z-index:15; overflow:hidden; display:none;
+      position:absolute; top:0; left:0; width:100%; height:60%; pointer-events:none;
+      z-index:15; overflow:hidden; display:none;
     }
     .barrage { 
       position:absolute; 
@@ -77,14 +77,10 @@
 
   <!-- 資源 -->
   <a-assets>
-    <!-- 3D 模型 -->
     <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
     <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
     <a-asset-item id="checkpoint2Model" src="checkpoint2.glb"></a-asset-item>
     <a-asset-item id="checkpoint9Model" src="checkpoint9.glb"></a-asset-item>
-
-    <!-- 影片資源 -->
-    <video id="CompVideo" src="Comp.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
   </a-assets>
 
   <!-- Marker + 模型 -->
@@ -100,10 +96,10 @@
     <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
 
- <a-entity mindar-image-target="targetIndex:9" id="checkpoint-2">
-    <a-gltf-model src="#checkpoint9Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
+  <!-- checkpoint-9: 點擊回上一頁 -->
+  <a-entity mindar-image-target="targetIndex:9" id="checkpoint-9">
+    <a-gltf-model id="model-9" src="#checkpoint9Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
-  
 
 </a-scene>
 
@@ -124,18 +120,11 @@ function goHome() {
   window.location.href = "https://starlightar.webflow.io/";
 }
 
-// ========== 留言 + 彈幕組 ==========
+// ========== 留言 + 彈幕組 (只限 0-2) ==========
 const messageMarkers = [
   { id:"checkpoint-0", messages:[], interval:null, rewardKey:"reward_checkpoint0" },
   { id:"checkpoint-1", messages:[], interval:null, rewardKey:"reward_checkpoint1" },
   { id:"checkpoint-2", messages:[], interval:null, rewardKey:"reward_checkpoint2" }
-];
-
-// ========== 影片播放組 ==========
-const videoMarkers = [
-  { id:"checkpoint-3" }, { id:"checkpoint-4" }, { id:"checkpoint-5" },
-  { id:"checkpoint-6" }, { id:"checkpoint-7" }, { id:"checkpoint-8" },
-  { id:"checkpoint-9" }, { id:"checkpoint-10" }, { id:"checkpoint-11" }, { id:"checkpoint-12" }
 ];
 
 const input = document.getElementById("messageInput");
@@ -146,7 +135,6 @@ const container = document.getElementById("barrage-container");
 const form = document.getElementById("messageForm");
 
 let activeMarker = null;
-const videoEl = document.getElementById("CompVideo");
 
 // 載入本地存儲
 messageMarkers.forEach(m=>{
@@ -182,14 +170,12 @@ function stopBarrage(m){
   if(!messageMarkers.some(marker=>marker.interval)) container.style.display="none";
 }
 
-// Marker 找到 / 消失事件（彈幕）
+// Marker 找到 / 消失事件
 messageMarkers.forEach(m=>{
   const el=document.getElementById(m.id);
   el.addEventListener("targetFound", ()=>{
     activeMarker = m;
     form.style.display = "flex";
-    input.disabled = false;
-    sendBtn.disabled = false;
     startBarrage(m);
     localStorage.setItem(m.rewardKey,"true");
   });
@@ -197,17 +183,14 @@ messageMarkers.forEach(m=>{
   el.addEventListener("targetLost", ()=>{
     if(activeMarker===m) activeMarker=null;
     form.style.display = "none";
-    input.disabled = true;
-    sendBtn.disabled = true;
     stopBarrage(m);
+    container.innerHTML = "";
   });
 });
 
-// Marker 找到 / 消失事件（影片）
-videoMarkers.forEach(v=>{
-  const el=document.getElementById(v.id);
-  el.addEventListener("targetFound", ()=>{ videoEl.play(); });
-  el.addEventListener("targetLost", ()=>{ videoEl.pause(); });
+// checkpoint-9: 點擊回上一頁
+document.querySelector("#model-9").addEventListener("click", ()=>{
+  history.back();
 });
 
 // 圖片預覽
