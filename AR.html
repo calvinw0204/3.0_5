@@ -81,10 +81,13 @@
     <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
     <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
     <a-asset-item id="checkpoint2Model" src="checkpoint2.glb"></a-asset-item>
-    <a-asset-item id="checkpoint5Model" src="road1.glb"></a-asset-item>
+    <a-asset-item id="checkpoint9Model" src="checkpoint9.glb"></a-asset-item>
+
+    <!-- 影片資源 -->
+    <video id="CompVideo" src="Comp.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
   </a-assets>
 
-  <!-- Marker + 模型 (0-2 保留) -->
+  <!-- Marker + 模型 -->
   <a-entity mindar-image-target="targetIndex:0" id="checkpoint-0">
     <a-gltf-model src="#checkpoint0Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
@@ -97,10 +100,10 @@
     <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
 
-  <!-- Marker 5 改為 3D 模型 -->
-  <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5">
-    <a-gltf-model src="#checkpoint5Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
+ <a-entity mindar-image-target="targetIndex:9" id="checkpoint-2">
+    <a-gltf-model src="#checkpoint9Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
+  
 
 </a-scene>
 
