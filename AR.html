@@ -8,42 +8,17 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.css" />
   <style>
     body, html { margin:0; padding:0; height:100%; overflow:hidden; font-family:sans-serif; }
-
     #home-btn {
-      position: fixed;
-      top: 15px; left: 15px;
+      position: fixed; top: 15px; left: 15px;
       background: rgba(0,0,0,0.6);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 50px; height: 50px;
-      font-size: 22px;
-      cursor: pointer;
+      color: white; border: none; border-radius: 50%;
+      width: 50px; height: 50px; font-size: 22px; cursor: pointer;
       z-index: 9999;
     }
-
-    /* 彈幕 */
-    #barrage-container {
-      position:absolute; top:0; left:0; width:100%; height:60%; pointer-events:none;
-      z-index:15; overflow:hidden; display:none;
-    }
-    .barrage { 
-      position:absolute; 
-      white-space:nowrap; 
-      font-size:18px; 
-      color:white; 
-      text-shadow:0 0 6px black; 
-      display:flex; 
-      align-items:center; 
-      gap:6px; 
-      animation: moveLeft 8s linear forwards; 
-    }
-    .barrage img { 
-      height:120px; width:auto; border-radius:6px; vertical-align:middle; 
-    }
+    #barrage-container { position:absolute; top:0; left:0; width:100%; height:60%; pointer-events:none; z-index:15; overflow:hidden; display:none; }
+    .barrage { position:absolute; white-space:nowrap; font-size:18px; color:white; text-shadow:0 0 6px black; display:flex; align-items:center; gap:6px; animation: moveLeft 8s linear forwards; }
+    .barrage img { height:120px; width:auto; border-radius:6px; vertical-align:middle; }
     @keyframes moveLeft { from { left:100%; } to { left:-100%; } }
-
-    /* 留言區 */
     #messageForm {
       position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
       background:rgba(255,255,255,0.95); padding:8px 12px; border-radius:12px;
@@ -60,10 +35,8 @@
 </head>
 <body>
 
-<!-- Home 按鈕 -->
 <button id="home-btn" onclick="goHome()">🏠</button>
 
-<!-- AR Scene -->
 <a-scene mindar-image="imageTargetSrc: travel-target.mind; autoStart: true;
                        filterMinCF: 0.0001;
                        filterBeta: 0.001;
@@ -73,10 +46,8 @@
          device-orientation-permission-ui="enabled: true"
          embedded>
  
-  <!-- camera + cursor for clicking -->
   <a-camera position="0 0 0" look-controls="enabled:false" cursor="rayOrigin: mouse"></a-camera>
 
-  <!-- 資源 -->
   <a-assets>
     <a-asset-item id="checkpoint0Model" src="checkpoint0.glb"></a-asset-item>
     <a-asset-item id="checkpoint1Model" src="checkpoint1.glb"></a-asset-item>
@@ -84,7 +55,6 @@
     <a-asset-item id="checkpoint5Model" src="checkpoint5.glb"></a-asset-item>
   </a-assets>
 
-  <!-- Marker + 模型 -->
   <a-entity mindar-image-target="targetIndex:0" id="checkpoint-0">
     <a-gltf-model src="#checkpoint0Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
@@ -97,20 +67,15 @@
     <a-gltf-model src="#checkpoint2Model" position="0 0 0.1" scale="0.75 0.75 0.75"></a-gltf-model>
   </a-entity>
 
-  <!-- checkpoint-5: 點擊回上一頁 (無彈幕/留言) -->
   <a-entity mindar-image-target="targetIndex:5" id="checkpoint-5">
-    <!-- 放大3倍 -->
     <a-gltf-model id="model-5" src="#checkpoint5Model" position="0 0 0.1" scale="2.25 2.25 2.25"></a-gltf-model>
-    <!-- 放大 hitbox -->
     <a-box id="checkpoint5-hitbox" width="3" height="3" depth="1.5" opacity="0" position="0 0 1"></a-box>
   </a-entity>
 
 </a-scene>
 
-<!-- 彈幕容器 -->
 <div id="barrage-container"></div>
 
-<!-- 留言區 -->
 <div id="messageForm">
   <input type="text" id="messageInput" placeholder="輸入文字..." />
   <label for="imageInput" id="imageLabel">📷</label>
@@ -120,11 +85,8 @@
 </div>
 
 <script>
-function goHome() {
-  window.location.href = "https://starlightar.webflow.io/";
-}
+function goHome() { window.location.href = "https://starlightar.webflow.io/"; }
 
-// ========== 留言 + 彈幕組 (只限 0-2) ==========
 const messageMarkers = [
   { id:"checkpoint-0", messages:[], interval:null, rewardKey:"reward_checkpoint0" },
   { id:"checkpoint-1", messages:[], interval:null, rewardKey:"reward_checkpoint1" },
@@ -137,7 +99,6 @@ const imageInput = document.getElementById("imageInput");
 const preview = document.getElementById("imagePreview");
 const container = document.getElementById("barrage-container");
 const form = document.getElementById("messageForm");
-
 let activeMarker = null;
 
 // 載入本地存儲
@@ -174,7 +135,7 @@ function stopBarrage(m){
   if(!messageMarkers.some(marker=>marker.interval)) container.style.display="none";
 }
 
-// Marker 找到 / 消失事件 (0-2)
+// Marker 0-2
 messageMarkers.forEach(m=>{
   const el=document.getElementById(m.id);
   el.addEventListener("targetFound", ()=>{
@@ -183,7 +144,6 @@ messageMarkers.forEach(m=>{
     startBarrage(m);
     localStorage.setItem(m.rewardKey,"true");
   });
-
   el.addEventListener("targetLost", ()=>{
     if(activeMarker===m) activeMarker=null;
     form.style.display = "none";
@@ -192,19 +152,18 @@ messageMarkers.forEach(m=>{
   });
 });
 
-// checkpoint-5: click 回上一頁（用 hitbox，等 scene loaded）
-AFRAME.scenes[0].addEventListener("loaded", () => {
-  setTimeout(() => {
-    const hitbox5 = document.querySelector("#checkpoint5-hitbox");
-    if (hitbox5) {
-      hitbox5.addEventListener("click", () => {
-        console.log("✅ checkpoint-5 clicked, going back");
-        history.back();
-      });
-    } else {
-      console.warn("⚠️ checkpoint5-hitbox not found");
-    }
-  }, 1000);
+// checkpoint-5 click 回上一頁
+const checkpoint5Entity = document.querySelector("#checkpoint-5");
+checkpoint5Entity.addEventListener("targetFound", ()=>{
+  const hitbox5 = document.querySelector("#checkpoint5-hitbox");
+  if(hitbox5){
+    hitbox5.replaceWith(hitbox5.cloneNode(true)); // 移除舊 listener
+    const newHitbox = document.querySelector("#checkpoint5-hitbox");
+    newHitbox.addEventListener("click", ()=>{ 
+      console.log("✅ checkpoint-5 clicked"); 
+      history.back(); 
+    });
+  }
 });
 
 // 圖片預覽
@@ -222,7 +181,6 @@ sendBtn.addEventListener("click",()=>{
   const text=input.value.trim();
   const file=imageInput.files[0];
   if(!text && !file) return;
-
   const saveMsg=(imgData=null)=>{
     const msg={text,img:imgData};
     activeMarker.messages.push(msg);
@@ -231,7 +189,6 @@ sendBtn.addEventListener("click",()=>{
     showBarrage(msg);
     input.value=""; imageInput.value=""; preview.style.display="none";
   };
-
   if(file){
     const reader=new FileReader();
     reader.onload=e=>saveMsg(e.target.result);
@@ -239,7 +196,6 @@ sendBtn.addEventListener("click",()=>{
   } else saveMsg();
 });
 
-// Enter 發送
 input.addEventListener("keydown", e=>{ if(e.key==="Enter") sendBtn.click(); });
 </script>
 
